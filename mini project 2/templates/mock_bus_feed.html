@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>City Bus Corporation &bull; Live Service Advisories</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #fafafa; color: #1e293b; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: #fff; padding: 24px; border: 1px solid #e2e8f0; border-radius: 8px; }
+        h1 { color: #0f172a; font-size: 1.4rem; border-bottom: 2px solid #0284c7; padding-bottom: 8px; }
+        .transit-notice-card { border: 1px solid #cbd5e1; border-radius: 6px; padding: 16px; margin: 16px 0; background: #fff; }
+        .route-badge { background: #0284c7; color: white; padding: 3px 8px; border-radius: 4px; font-weight: bold; }
+        .advisory-type { background: #fef3c7; color: #92400e; padding: 3px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+        .severity-badge { background: #fee2e2; color: #991b1b; padding: 3px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+        .notice-title { font-size: 1.1rem; font-weight: bold; margin: 6px 0; }
+        .affected-area { color: #0369a1; font-weight: 600; font-size: 0.85rem; margin-bottom: 6px; }
+        .notice-description { font-size: 0.9rem; color: #475569; }
+        .dates-bar { font-size: 0.8rem; color: #64748b; margin-top: 8px; display: flex; justify-content: space-between; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>City Bus Corporation &bull; Passenger Disruption &amp; Detour Portal</h1>
+        <p style="font-size: 0.85rem; color: #64748b;">
+            Direct official bulletin feed parsed by TransitNotice crawler. Feed generated: {{ today }}.
+        </p>
+
+        <!-- Notice 1 -->
+        <div class="transit-notice-card" data-notice-id="ADV-2026-001">
+            <div style="display: flex; justify-content: space-between;">
+                <span class="route-badge">101</span>
+                <div>
+                    <span class="advisory-type">Diversion</span>
+                    <span class="severity-badge">High</span>
+                </div>
+            </div>
+            <h3 class="notice-title">Pipeline Repair Diversion on Grand Avenue</h3>
+            <div class="affected-area">Grand Avenue &amp; Riverfront</div>
+            <p class="notice-description">
+                Due to emergency water pipeline repair on Grand Avenue, Route 101 buses will detour via 4th Boulevard. Riverfront stop is temporarily relocated 200m north.
+            </p>
+            <div class="dates-bar">
+                <span>Effective: <span class="start-date" data-start-date="2026-11-02">2026-11-02</span></span>
+                <span>Until: <span class="end-date" data-end-date="2026-11-09">2026-11-09</span></span>
+            </div>
+            <div style="margin-top: 6px;">
+                <a href="/mock-bus-feed#ADV-2026-001" style="color: #0284c7; font-size: 0.78rem;">Permanent Record Link</a>
+            </div>
+        </div>
+
+        <!-- Notice 2 -->
+        <div class="transit-notice-card" data-notice-id="ADV-2026-002">
+            <div style="display: flex; justify-content: space-between;">
+                <span class="route-badge">204B</span>
+                <div>
+                    <span class="advisory-type">Delay</span>
+                    <span class="severity-badge">Medium</span>
+                </div>
+            </div>
+            <h3 class="notice-title">Road Resurfacing Work Causing 15-20 Min Delays</h3>
+            <div class="affected-area">Pine Junction to Maple Lane</div>
+            <p class="notice-description">
+                Lane closures for asphalt resurfacing between Pine Junction and Maple Lane are resulting in heavy congestion. Passengers are advised to allow extra travel time.
+            </p>
+            <div class="dates-bar">
+                <span>Effective: <span class="start-date" data-start-date="2026-11-01">2026-11-01</span></span>
+                <span>Until: <span class="end-date" data-end-date="2026-11-05">2026-11-05</span></span>
+            </div>
+            <div style="margin-top: 6px;">
+                <a href="/mock-bus-feed#ADV-2026-002" style="color: #0284c7; font-size: 0.78rem;">Permanent Record Link</a>
+            </div>
+        </div>
+
+        <!-- Notice 3 -->
+        <div class="transit-notice-card" data-notice-id="ADV-2026-006">
+            <div style="display: flex; justify-content: space-between;">
+                <span class="route-badge">RAIL-SUB</span>
+                <div>
+                    <span class="advisory-type">Maintenance</span>
+                    <span class="severity-badge" style="background:#e0f2fe; color:#0369a1;">Low</span>
+                </div>
+            </div>
+            <h3 class="notice-title">Platform 2 Escalator Replacement</h3>
+            <div class="affected-area">Greenwood Station Crossing</div>
+            <p class="notice-description">
+                Platform 2 north escalator under scheduled maintenance. Elevator and stair access remain fully operational for passenger mobility.
+            </p>
+            <div class="dates-bar">
+                <span>Effective: <span class="start-date" data-start-date="2026-11-02">2026-11-02</span></span>
+                <span>Until: <span class="end-date" data-end-date="2026-12-02">2026-12-02</span></span>
+            </div>
+            <div style="margin-top: 6px;">
+                <a href="/mock-bus-feed#ADV-2026-006" style="color: #0284c7; font-size: 0.78rem;">Permanent Record Link</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Service Notices – TransitNotice Tracker{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Page Header -->
+    <div class="section-header">
+        <div>
+            <h1 class="section-title">Public Transport Service Notices</h1>
+            <p style="font-size: 0.88rem; color: var(--text-muted);">
+                Search and filter route diversions, operational delays, emergency cancellations, and maintenance notices.
+            </p>
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary btn-sm" onclick="exportNoticesToCSV()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Export CSV
+            </button>
+            <a href="{{ url_for('notices') }}" class="btn btn-outline btn-sm">Clear Filters</a>
+        </div>
+    </div>
+
+    <!-- Filter Control Card -->
+    <div class="filter-card">
+        <form method="GET" action="{{ url_for('notices') }}">
+            <div class="filter-grid">
+                <!-- Keyword Search -->
+                <div class="filter-group">
+                    <label class="filter-label" for="filterSearch">Search Keywords</label>
+                    <input type="text" id="filterSearch" name="q" class="form-input" placeholder="e.g. Grand Avenue, Resurfacing, Pipeline..." value="{{ selected_q }}">
+                </div>
+
+                <!-- Route Filter -->
+                <div class="filter-group">
+                    <label class="filter-label" for="filterRoute">Route Number</label>
+                    <select id="filterRoute" name="route" class="form-select">
+                        <option value="">All Routes</option>
+                        {% for r in all_routes %}
+                            <option value="{{ r }}" {% if selected_route == r %}selected{% endif %}>Route {{ r }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Advisory Type Filter -->
+                <div class="filter-group">
+                    <label class="filter-label" for="filterType">Advisory Type</label>
+                    <select id="filterType" name="type" class="form-select">
+                        <option value="">All Types</option>
+                        {% for t in all_types %}
+                            <option value="{{ t }}" {% if selected_type == t %}selected{% endif %}>{{ t }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Lifecycle Status Filter -->
+                <div class="filter-group">
+                    <label class="filter-label" for="filterStatus">Status</label>
+                    <select id="filterStatus" name="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="Active" {% if selected_status == 'Active' %}selected{% endif %}>Active</option>
+                        <option value="Revised" {% if selected_status == 'Revised' %}selected{% endif %}>Revised</option>
+                        <option value="Expired" {% if selected_status == 'Expired' %}selected{% endif %}>Expired (Outdated)</option>
+                        <option value="Cancelled" {% if selected_status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                    </select>
+                </div>
+
+                <!-- Date Active Filter -->
+                <div class="filter-group">
+                    <label class="filter-label" for="filterDate">Active On Date</label>
+                    <input type="date" id="filterDate" name="date" class="form-input" value="{{ selected_date }}">
+                </div>
+
+                <!-- Submit Button -->
+                <div class="filter-group" style="justify-content: flex-end;">
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        Filter Notices
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Active Filters & Result Count Bar -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+        <span style="font-size: 0.88rem; color: var(--text-secondary); font-weight: 600;">
+            Found <strong style="color: var(--primary);">{{ total_results }}</strong> notice record(s)
+        </span>
+        <span style="font-size: 0.8rem; color: var(--text-muted);">
+            Duplicate notices are automatically filtered via SHA-256 content hashes.
+        </span>
+    </div>
+
+    <!-- Notices Grid -->
+    <div class="notices-grid" id="noticesListContainer">
+        {% for notice in notices %}
+            <div class="notice-card {% if notice.status == 'Expired' %}is-expired{% endif %}"
+                 data-notice-id="{{ notice.id }}"
+                 data-route="{{ notice.route_number }}"
+                 data-title="{{ notice.title }}"
+                 data-type="{{ notice.advisory_type }}"
+                 data-status="{{ notice.status }}"
+                 data-start="{{ notice.start_date }}"
+                 data-end="{{ notice.end_date }}">
+                <div>
+                    <div class="notice-card-header">
+                        <span class="route-pill">ROUTE {{ notice.route_number }}</span>
+                        <div class="badges-group">
+                            <!-- Advisory Type -->
+                            <span class="badge badge-type {{ notice.advisory_type|lower|replace(' ', '') }}">
+                                {{ notice.advisory_type }}
+                            </span>
+
+                            <!-- Status Badge -->
+                            {% if notice.status == 'Active' %}
+                                <span class="badge badge-active">&bull; Active</span>
+                            {% elif notice.status == 'Revised' %}
+                                <span class="badge badge-revised">&#x21bb; Revised (v{{ notice.version }})</span>
+                            {% elif notice.status == 'Expired' %}
+                                <span class="badge badge-expired">&#9200; Expired</span>
+                            {% elif notice.status == 'Cancelled' %}
+                                <span class="badge badge-cancelled">&#10006; Cancelled</span>
+                            {% endif %}
+
+                            <!-- Severity -->
+                            <span class="badge badge-severity {{ notice.severity|lower }}">
+                                {{ notice.severity }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <h3 class="notice-title">{{ notice.title }}</h3>
+
+                    <div class="notice-area">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                        <span>Area: {{ notice.affected_area }}</span>
+                    </div>
+
+                    <p class="notice-description">{{ notice.description }}</p>
+                </div>
+
+                <div class="notice-meta">
+                    <div class="meta-dates">
+                        <span><strong>Effective:</strong> {{ notice.start_date }}</span>
+                        <span><strong>Until:</strong> {{ notice.end_date }}</span>
+                    </div>
+
+                    <div class="meta-footer-actions">
+                        {% if notice.status == 'Expired' %}
+                            <span class="outdated-warning">&#9888; Outdated Notice (Historical)</span>
+                        {% else %}
+                            <a href="{{ notice.original_url or '#' }}" target="_blank" class="source-link">
+                                Source Link &nearr;
+                            </a>
+                        {% endif %}
+
+                        <div style="display: flex; gap: 6px;">
+                            {% if notice.status == 'Revised' %}
+                                <button class="btn btn-outline btn-xs" onclick="openHistoryModal({{ notice.id }})">
+                                    History (v{{ notice.version }})
+                                </button>
+                            {% endif %}
+                            <a href="{{ url_for('routes', route=notice.route_number) }}" class="btn btn-secondary btn-xs">
+                                Stop Map &rarr;
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div style="grid-column: 1 / -1; background: #ffffff; padding: 48px; border-radius: var(--radius-lg); text-align: center; border: 1px dashed var(--border-subtle);">
+                <p style="color: var(--text-muted); font-size: 1.05rem; margin-bottom: 12px;">No service notices matched your search and filter criteria.</p>
+                <a href="{{ url_for('notices') }}" class="btn btn-secondary btn-sm">Reset All Filters</a>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Notice Revision History Modal -->
+<div id="historyModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 class="modal-title" id="historyModalTitle">Notice Revision History</h3>
+            <button class="modal-close" onclick="closeHistoryModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="historyModalBody">
+            <p>Loading historical revisions...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/notices.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}Route Details – TransitNotice Tracker{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header with Route Selector -->
+    <div class="section-header">
+        <div>
+            <h1 class="section-title">Route & Station Impact Inspector</h1>
+            <p style="font-size: 0.88rem; color: var(--text-muted);">
+                Inspect transit corridor health, station stops affected by diversions or repairs, and notice histories.
+            </p>
+        </div>
+        <div>
+            <form method="GET" action="{{ url_for('routes') }}" style="display: flex; gap: 8px;">
+                <select name="route" class="form-select" onchange="this.form.submit()" style="min-width: 220px;">
+                    {% for r in all_routes %}
+                        <option value="{{ r.route_number }}" {% if selected_route and selected_route.route_number == r.route_number %}selected{% endif %}>
+                            {{ r.route_number }} - {{ r.route_name }} ({{ r.transport_mode }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+    </div>
+
+    {% if selected_route %}
+    <!-- Route Hero Card -->
+    <div class="route-hero">
+        <div class="route-info-bar">
+            <div>
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                    <span class="route-pill" style="font-size: 1.1rem; padding: 6px 14px;">ROUTE {{ selected_route.route_number }}</span>
+                    <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--text-primary);">{{ selected_route.route_name }}</h2>
+                </div>
+                <div style="color: var(--text-secondary); font-size: 0.9rem;">
+                    <strong>Corridor:</strong> {{ selected_route.origin }} &longleftrightarrow; {{ selected_route.destination }}
+                </div>
+            </div>
+
+            <div class="route-meta-badges">
+                <span class="badge" style="background: #e0f2fe; color: #0369a1; border-color: #bae6fd; font-size: 0.82rem; padding: 6px 12px;">
+                    Mode: {{ selected_route.transport_mode }}
+                </span>
+
+                {% if selected_route.status == 'Normal' %}
+                    <span class="badge badge-active" style="font-size: 0.82rem; padding: 6px 12px;">
+                        &bull; Status: Normal Operations
+                    </span>
+                {% elif selected_route.status == 'Diverted' %}
+                    <span class="badge badge-type diversion" style="font-size: 0.82rem; padding: 6px 12px;">
+                        &#9888; Status: Detour / Diversion
+                    </span>
+                {% elif selected_route.status == 'Delayed' %}
+                    <span class="badge badge-type delay" style="font-size: 0.82rem; padding: 6px 12px;">
+                        &#9201; Status: Traffic Delays
+                    </span>
+                {% elif selected_route.status == 'Suspended' %}
+                    <span class="badge badge-cancelled" style="font-size: 0.82rem; padding: 6px 12px;">
+                        &#10006; Status: Service Suspended
+                    </span>
+                {% else %}
+                    <span class="badge badge-type maintenance" style="font-size: 0.82rem; padding: 6px 12px;">
+                        &#128295; Status: Maintenance
+                    </span>
+                {% endif %}
+
+                <span class="badge" style="background: #f1f5f9; color: #475569; font-size: 0.82rem; padding: 6px 12px;">
+                    Total Stops: {{ stops|length }}
+                </span>
+            </div>
+        </div>
+
+        <!-- Stop Progression Visual Pipeline -->
+        <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-primary);">Station Stop Progression</h3>
+                <span style="font-size: 0.78rem; color: var(--text-muted);">
+                    <span style="display: inline-block; width: 10px; height: 10px; background: #ef4444; border-radius: 50%; margin-right: 4px;"></span>
+                    Red nodes indicate stations impacted by active service notices
+                </span>
+            </div>
+
+            <div class="stops-pipeline-wrapper">
+                <div class="stops-pipeline">
+                    {% for stop in stops %}
+                        {% set is_impacted = stop in affected_stops %}
+                        <div class="stop-node {% if is_impacted %}is-affected{% endif %}">
+                            <div class="stop-line"></div>
+                            <div class="stop-bullet" title="{{ stop }}">
+                                {% if is_impacted %}!{% else %}{{ loop.index }}{% endif %}
+                            </div>
+                            <div class="stop-name">{{ stop }}</div>
+                            {% if is_impacted %}
+                                <div class="stop-tag">Alert Area</div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active and Historical Notices for this Route -->
+    <div class="section-header" style="margin-top: 32px;">
+        <div>
+            <h2 class="section-title">Service Advisories Affecting Route {{ selected_route.route_number }}</h2>
+            <p style="font-size: 0.84rem; color: var(--text-muted);">
+                Chronological list of scraped disruptions, maintenance notices, and revision histories for this specific line.
+            </p>
+        </div>
+    </div>
+
+    <div class="notices-grid">
+        {% for notice in route_notices %}
+            <div class="notice-card {% if notice.status == 'Expired' %}is-expired{% endif %}">
+                <div>
+                    <div class="notice-card-header">
+                        <span class="route-pill">ROUTE {{ notice.route_number }}</span>
+                        <div class="badges-group">
+                            <span class="badge badge-type {{ notice.advisory_type|lower|replace(' ', '') }}">
+                                {{ notice.advisory_type }}
+                            </span>
+
+                            {% if notice.status == 'Active' %}
+                                <span class="badge badge-active">&bull; Active</span>
+                            {% elif notice.status == 'Revised' %}
+                                <span class="badge badge-revised">&#x21bb; Revised (v{{ notice.version }})</span>
+                            {% elif notice.status == 'Expired' %}
+                                <span class="badge badge-expired">&#9200; Expired</span>
+                            {% elif notice.status == 'Cancelled' %}
+                                <span class="badge badge-cancelled">&#10006; Cancelled</span>
+                            {% endif %}
+
+                            <span class="badge badge-severity {{ notice.severity|lower }}">
+                                {{ notice.severity }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <h3 class="notice-title">{{ notice.title }}</h3>
+
+                    <div class="notice-area">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                        <span>Area: {{ notice.affected_area }}</span>
+                    </div>
+
+                    <p class="notice-description">{{ notice.description }}</p>
+                </div>
+
+                <div class="notice-meta">
+                    <div class="meta-dates">
+                        <span><strong>Effective:</strong> {{ notice.start_date }}</span>
+                        <span><strong>Until:</strong> {{ notice.end_date }}</span>
+                    </div>
+
+                    <div class="meta-footer-actions">
+                        {% if notice.status == 'Expired' %}
+                            <span class="outdated-warning">&#9888; Outdated Notice (Historical)</span>
+                        {% else %}
+                            <a href="{{ notice.original_url or '#' }}" target="_blank" class="source-link">
+                                Original Source &nearr;
+                            </a>
+                        {% endif %}
+
+                        {% if notice.status == 'Revised' %}
+                            <button class="btn btn-outline btn-xs" onclick="openHistoryModal({{ notice.id }})">
+                                View Revision History
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div style="grid-column: 1 / -1; background: #ffffff; padding: 36px; border-radius: var(--radius-lg); text-align: center; border: 1px dashed var(--border-subtle);">
+                <p style="color: var(--text-muted); font-size: 0.95rem;">No active or historical service notices currently associated with Route {{ selected_route.route_number }}.</p>
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- Notice Revision History Modal -->
+<div id="historyModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 class="modal-title" id="historyModalTitle">Notice Revision History</h3>
+            <button class="modal-close" onclick="closeHistoryModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="historyModalBody">
+            <p>Loading historical revisions...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/notices.js') }}"></script>
+{% endblock %}

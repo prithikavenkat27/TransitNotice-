@@ -1,0 +1,340 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Control Panel – TransitNotice Tracker{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Admin Hero -->
+    <div class="section-header">
+        <div>
+            <h1 class="section-title">Admin Operations &amp; Scraper Control</h1>
+            <p style="font-size: 0.88rem; color: var(--text-muted);">
+                Trigger web crawler on demand, audit robots.txt compliance, manage official feed sources, and review crawler execution logs.
+            </p>
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <button id="adminScrapeBtn" class="btn btn-primary btn-sm" onclick="triggerAdminScrape()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+                Run Scraper Engine Now
+            </button>
+            <form method="POST" action="{{ url_for('admin_reset_db') }}" onsubmit="return confirm('Are you sure you want to reset and re-seed the sample database?');">
+                <button type="submit" class="btn btn-outline btn-sm" style="color: #ef4444; border-color: #fca5a5;">
+                    Reset Database to Sample
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Robots.txt Inspector & Quick Scraper Status -->
+    <div class="charts-grid" style="margin-bottom: 24px;">
+        <!-- Robots.txt Compliance Inspector -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <div>
+                    <h2 class="chart-title">Robots.txt Policy Inspector</h2>
+                    <span class="chart-subtitle">Verify official website crawling permissions before initiating extraction</span>
+                </div>
+            </div>
+            <div>
+                <form id="robotsCheckForm" onsubmit="event.preventDefault(); inspectRobotsUrl();">
+                    <div class="filter-group" style="margin-bottom: 12px;">
+                        <label class="filter-label" for="robotsTargetUrl">Target Website URL</label>
+                        <input type="url" id="robotsTargetUrl" class="form-input" placeholder="e.g. http://127.0.0.1:5000/mock-transit-portal" value="http://127.0.0.1:5000/mock-transit-portal" required>
+                    </div>
+                    <button type="submit" id="checkRobotsBtn" class="btn btn-secondary btn-sm" style="width: 100%;">
+                        Inspect Robots.txt Directives
+                    </button>
+                </form>
+                <div id="robotsResultBox" style="margin-top: 14px; display: none; padding: 12px; border-radius: var(--radius-md); font-size: 0.85rem;"></div>
+            </div>
+        </div>
+
+        <!-- Add New Source Card -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <div>
+                    <h2 class="chart-title">Add Official Transport Feed</h2>
+                    <span class="chart-subtitle">Register new official web bulletin or RSS/HTML feed</span>
+                </div>
+            </div>
+            <form method="POST" action="{{ url_for('admin_add_source') }}">
+                <div class="filter-group" style="margin-bottom: 10px;">
+                    <label class="filter-label">Authority / Agency Name</label>
+                    <input type="text" name="name" class="form-input" placeholder="e.g. City Rail Network Bulletin" required>
+                </div>
+                <div class="filter-group" style="margin-bottom: 10px;">
+                    <label class="filter-label">Feed Webpage URL</label>
+                    <input type="url" name="url" class="form-input" placeholder="http://127.0.0.1:5000/mock-transit-portal" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm" style="width: 100%; margin-top: 6px;">
+                    + Register Source
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Configured Sources Table -->
+    <div class="table-card">
+        <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary);">Configured Transport Sources</h3>
+            <span style="font-size: 0.78rem; color: var(--text-muted);">Permission verified via standard robot parser</span>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Agency / Source Name</th>
+                        <th>Target Feed URL</th>
+                        <th>Status</th>
+                        <th>Last Checked</th>
+                        <th>Crawler Directives</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for src in sources %}
+                        <tr>
+                            <td style="font-family: var(--font-mono); font-weight: 600;">#{{ src.id }}</td>
+                            <td style="font-weight: 600;">{{ src.name }}</td>
+                            <td>
+                                <a href="{{ src.url }}" target="_blank" style="color: var(--primary); text-decoration: none; font-size: 0.82rem;">
+                                    {{ src.url }} &nearr;
+                                </a>
+                            </td>
+                            <td>
+                                {% if src.is_active == 1 %}
+                                    <span class="badge badge-active">Active</span>
+                                {% else %}
+                                    <span class="badge badge-expired">Disabled</span>
+                                {% endif %}
+                            </td>
+                            <td style="font-size: 0.8rem; color: var(--text-muted); font-family: var(--font-mono);">
+                                {{ src.last_checked_at or 'Not yet crawled' }}
+                            </td>
+                            <td>
+                                {% if src.last_status == 'Success' %}
+                                    <span class="badge" style="background: #ecfdf5; color: #065f46; font-size: 0.72rem;">&#10004; Permitted</span>
+                                {% elif src.last_status == 'Restricted' %}
+                                    <span class="badge" style="background: #fef2f2; color: #991b1b; font-size: 0.72rem;">&#9888; Disallowed</span>
+                                {% else %}
+                                    <span class="badge" style="background: #f1f5f9; color: #475569; font-size: 0.72rem;">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <form method="POST" action="{{ url_for('admin_toggle_source', source_id=src.id) }}">
+                                    <button type="submit" class="btn btn-outline btn-xs">
+                                        {% if src.is_active == 1 %}Disable{% else %}Enable{% endif %}
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Scraper Execution Audit Logs Table -->
+    <div class="table-card">
+        <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary);">Scraper Execution &amp; Change Audit Logs</h3>
+            <span style="font-size: 0.78rem; color: var(--text-muted);">Real-time log of crawls, revisions detected, and errors</span>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Target Source</th>
+                        <th>Crawl Status</th>
+                        <th>Items Found</th>
+                        <th>New Added</th>
+                        <th>Revisions</th>
+                        <th>Details / Error Messages</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                        <tr>
+                            <td style="font-size: 0.78rem; font-family: var(--font-mono); color: var(--text-muted); white-space: nowrap;">
+                                {{ log.timestamp }}
+                            </td>
+                            <td style="font-weight: 600; font-size: 0.85rem;">{{ log.source_name }}</td>
+                            <td>
+                                {% if log.status == 'SUCCESS' %}
+                                    <span class="badge badge-active">&#10004; SUCCESS</span>
+                                {% elif log.status == 'WARNING' %}
+                                    <span class="badge badge-type diversion">&#9888; RESTRICTED</span>
+                                {% else %}
+                                    <span class="badge badge-cancelled">&#10006; FAILED</span>
+                                {% endif %}
+                            </td>
+                            <td style="font-weight: 700; text-align: center;">{{ log.items_found }}</td>
+                            <td style="color: #10b981; font-weight: 700; text-align: center;">+{{ log.items_new }}</td>
+                            <td style="color: #8b5cf6; font-weight: 700; text-align: center;">{{ log.items_updated }}</td>
+                            <td style="font-size: 0.82rem; color: var(--text-secondary); max-width: 320px;">
+                                {{ log.error_details }}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">No crawler activity logged yet.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Manual Service Notice Dispatcher Form -->
+    <div class="chart-card" style="margin-bottom: 24px;">
+        <div class="chart-header">
+            <div>
+                <h2 class="chart-title">Manual Notice Dispatcher</h2>
+                <span class="chart-subtitle">Manually register an official advisory or test revision hashing</span>
+            </div>
+        </div>
+        <form method="POST" action="{{ url_for('admin_add_notice') }}">
+            <div class="filter-grid" style="margin-bottom: 14px;">
+                <div class="filter-group">
+                    <label class="filter-label">Route Number</label>
+                    <select name="route_number" class="form-select" required>
+                        {% for rc in route_choices %}
+                            <option value="{{ rc.route_number }}">Route {{ rc.route_number }} - {{ rc.route_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">Affected Area / Stations</label>
+                    <input type="text" name="affected_area" class="form-input" placeholder="e.g. Market Square to Civic Center" required>
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">Advisory Type</label>
+                    <select name="advisory_type" class="form-select">
+                        <option value="Diversion">Diversion</option>
+                        <option value="Delay">Delay</option>
+                        <option value="Maintenance">Maintenance</option>
+                        <option value="Cancellation">Cancellation</option>
+                        <option value="Special Service">Special Service</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">Severity Level</label>
+                    <select name="severity" class="form-select">
+                        <option value="Low">Low</option>
+                        <option value="Medium" selected>Medium</option>
+                        <option value="High">High</option>
+                        <option value="Critical">Critical</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">Start Date</label>
+                    <input type="date" name="start_date" class="form-input" required>
+                </div>
+
+                <div class="filter-group">
+                    <label class="filter-label">End Date</label>
+                    <input type="date" name="end_date" class="form-input" required>
+                </div>
+            </div>
+
+            <div class="filter-group" style="margin-bottom: 14px;">
+                <label class="filter-label">Notice Title</label>
+                <input type="text" name="title" class="form-input" placeholder="e.g. Temporary Bus Detour via 5th Boulevard" required>
+            </div>
+
+            <div class="filter-group" style="margin-bottom: 14px;">
+                <label class="filter-label">Detailed Description</label>
+                <textarea name="description" rows="3" class="form-textarea" placeholder="Detailed service advisory description for commuters..." required></textarea>
+            </div>
+
+            <div class="filter-group" style="margin-bottom: 16px;">
+                <label class="filter-label">Source Link (Optional)</label>
+                <input type="url" name="original_url" class="form-input" placeholder="http://127.0.0.1:5000/mock-transit-portal">
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                Submit &amp; Publish Service Notice
+            </button>
+        </form>
+    </div>
+
+    <!-- Existing Notice Manager Table (Edit Status / Delete) -->
+    <div class="table-card">
+        <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary);">Service Notice Administrative Management</h3>
+            <span style="font-size: 0.78rem; color: var(--text-muted);">Override status or prune database entries</span>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Route</th>
+                        <th>Title &amp; Affected Area</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Dates</th>
+                        <th>Version</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for n in notices %}
+                        <tr>
+                            <td style="font-family: var(--font-mono); font-weight: 600;">#{{ n.id }}</td>
+                            <td><span class="route-pill">R-{{ n.route_number }}</span></td>
+                            <td>
+                                <div style="font-weight: 700; font-size: 0.88rem;">{{ n.title }}</div>
+                                <div style="font-size: 0.76rem; color: #0284c7;">{{ n.affected_area }}</div>
+                            </td>
+                            <td>
+                                <span class="badge badge-type {{ n.advisory_type|lower|replace(' ', '') }}">{{ n.advisory_type }}</span>
+                            </td>
+                            <td>
+                                {% if n.status == 'Active' %}
+                                    <span class="badge badge-active">Active</span>
+                                {% elif n.status == 'Revised' %}
+                                    <span class="badge badge-revised">Revised</span>
+                                {% elif n.status == 'Expired' %}
+                                    <span class="badge badge-expired">Expired</span>
+                                {% elif n.status == 'Cancelled' %}
+                                    <span class="badge badge-cancelled">Cancelled</span>
+                                {% endif %}
+                            </td>
+                            <td style="font-size: 0.75rem; font-family: var(--font-mono); color: var(--text-muted);">
+                                {{ n.start_date }} &rarr; {{ n.end_date }}
+                            </td>
+                            <td style="font-family: var(--font-mono); text-align: center;">v{{ n.version }}</td>
+                            <td>
+                                <div style="display: flex; gap: 4px;">
+                                    <form method="POST" action="{{ url_for('admin_mark_status', notice_id=n.id) }}" style="display: inline;">
+                                        <input type="hidden" name="new_status" value="{% if n.status == 'Cancelled' %}Active{% else %}Cancelled{% endif %}">
+                                        <button type="submit" class="btn btn-outline btn-xs" title="Toggle Status">
+                                            {% if n.status == 'Cancelled' %}Reactivate{% else %}Cancel{% endif %}
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="{{ url_for('admin_delete_notice', notice_id=n.id) }}" onsubmit="return confirm('Delete notice #{{ n.id }}?');" style="display: inline;">
+                                        <button type="submit" class="btn btn-outline btn-xs" style="color: #ef4444;" title="Delete">
+                                            &times;
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Official Service Bulletins – Metro Transit Authority</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f6f9; color: #1e293b; margin: 0; padding: 0; }
+        header { background: #1e3a8a; color: white; padding: 18px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        .header-title { font-size: 1.3rem; font-weight: bold; }
+        .header-subtitle { font-size: 0.85rem; opacity: 0.85; }
+        .container { max-width: 960px; margin: 30px auto; padding: 0 16px; }
+        .meta-banner { background: #e0e7ff; border-left: 4px solid #3730a3; padding: 12px 16px; margin-bottom: 24px; border-radius: 4px; font-size: 0.9rem; }
+        .transit-notice-card { background: white; border: 1px solid #cbd5e1; border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .route-badge { background: #0f172a; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.85rem; }
+        .advisory-type { background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+        .severity-badge { background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+        .notice-title { font-size: 1.15rem; font-weight: bold; margin: 6px 0; color: #0f172a; }
+        .affected-area { color: #0284c7; font-weight: 600; font-size: 0.88rem; margin-bottom: 8px; }
+        .notice-description { font-size: 0.9rem; line-height: 1.5; color: #334155; margin-bottom: 12px; }
+        .dates-bar { font-size: 0.8rem; color: #64748b; border-top: 1px solid #f1f5f9; padding-top: 8px; display: flex; justify-content: space-between; }
+        .footer-note { text-align: center; font-size: 0.8rem; color: #94a3b8; margin: 40px 0; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-title">Metro Transit Authority (MTA) &bull; Official Passenger Advisory Feed</div>
+        <div class="header-subtitle">Live bulletin service for metropolitan transit networks</div>
+    </header>
+
+    <div class="container">
+        <div class="meta-banner">
+            <strong>Public Service Bulletin Notice:</strong> This is an official simulated public transport advisory endpoint.
+            Our crawler accesses this page under permission rules defined in <code>/robots.txt</code>.
+            Last generated on: <strong>{{ today }}</strong>.
+        </div>
+
+        <!-- Bulletin 1: Blue Metro Maintenance (Simulated Revision Source) -->
+        <div class="transit-notice-card" data-notice-id="ADV-2026-003">
+            <div class="card-top">
+                <span class="route-badge">BLUE-METRO</span>
+                <div>
+                    <span class="advisory-type">Maintenance</span>
+                    <span class="severity-badge">High</span>
+                </div>
+            </div>
+            <h3 class="notice-title">Track Upgrades: Single Line Working Extended</h3>
+            <div class="affected-area">Airport Station to Industrial Zone</div>
+            <p class="notice-description">
+                REVISED: Nightly track stabilization and overhead wire modernization between Airport Station and Industrial Zone will continue through weekend. Shuttle trains operating at 25-minute intervals.
+            </p>
+            <div class="dates-bar">
+                <span>Effective Start: <span class="start-date" data-start-date="2026-10-26">2026-10-26</span></span>
+                <span>Expected Completion: <span class="end-date" data-end-date="2026-11-10">2026-11-10</span></span>
+            </div>
+            <div style="margin-top: 8px; font-size: 0.78rem;">
+                <a href="/mock-transit-portal#ADV-2026-003" style="color: #0284c7;">Direct Bulletin Permalink</a>
+            </div>
+        </div>
+
+        <!-- Bulletin 2: Red Metro Special Service -->
+        <div class="transit-notice-card" data-notice-id="ADV-2026-004">
+            <div class="card-top">
+                <span class="route-badge">RED-METRO</span>
+                <div>
+                    <span class="advisory-type">Special Service</span>
+                    <span class="severity-badge" style="background:#e0f2fe; color:#0369a1;">Low</span>
+                </div>
+            </div>
+            <h3 class="notice-title">Special Late Night Trains for Technology Expo</h3>
+            <div class="affected-area">Convention Hall</div>
+            <p class="notice-description">
+                Additional late-night frequency provided for attendees of the International Tech Expo at Convention Hall. Normal schedule resumes after event completion.
+            </p>
+            <div class="dates-bar">
+                <span>Effective Start: <span class="start-date" data-start-date="2026-10-20">2026-10-20</span></span>
+                <span>Expected Completion: <span class="end-date" data-end-date="2026-11-01">2026-11-01</span></span>
+            </div>
+            <div style="margin-top: 8px; font-size: 0.78rem;">
+                <a href="/mock-transit-portal#ADV-2026-004" style="color: #0284c7;">Direct Bulletin Permalink</a>
+            </div>
+        </div>
+
+        <!-- Bulletin 3: Tram 05 Power Grid Outage -->
+        <div class="transit-notice-card" data-notice-id="ADV-2026-005">
+            <div class="card-top">
+                <span class="route-badge">TRAM-05</span>
+                <div>
+                    <span class="advisory-type" style="background:#fee2e2; color:#991b1b;">Cancellation</span>
+                    <span class="severity-badge" style="background:#7f1d1d; color:white;">Critical</span>
+                </div>
+            </div>
+            <h3 class="notice-title">Full Suspension on Heritage Line due to Power Grid Failure</h3>
+            <div class="affected-area">Art Museum to Rose Garden</div>
+            <p class="notice-description">
+                Overhead traction power failure near Clock Tower Square. Heritage Tram services temporarily suspended until emergency substation repair finishes.
+            </p>
+            <div class="dates-bar">
+                <span>Effective Start: <span class="start-date" data-start-date="2026-11-02">2026-11-02</span></span>
+                <span>Expected Completion: <span class="end-date" data-end-date="2026-11-05">2026-11-05</span></span>
+            </div>
+            <div style="margin-top: 8px; font-size: 0.78rem;">
+                <a href="/mock-transit-portal#ADV-2026-005" style="color: #0284c7;">Direct Bulletin Permalink</a>
+            </div>
+        </div>
+
+        <div class="footer-note">
+            Official Feed &copy; 2026 Metro Transit Authority. All notices published under open commuter data guidelines.
+        </div>
+    </div>
+</body>
+</html>

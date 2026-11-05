@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard – TransitNotice Public Transport Tracker{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Hero Header -->
+    <div class="dash-hero">
+        <div class="hero-left">
+            <h1>Public Transport Service Update Tracker</h1>
+            <p>
+                Continuous web-scraping monitor extracting disruptions, diversions, delays, and scheduled maintenance notices across regional transport authority bulletins.
+            </p>
+        </div>
+        <div class="hero-stats-badge">
+            <span class="label">Last Crawl Checked</span>
+            <span class="val">{{ last_checked_time }}</span>
+            <span style="font-size: 0.75rem; color: #a7f3d0; margin-top: 2px;">
+                Status: <strong>{{ last_scrape_status }}</strong> (Robots.txt verified)
+            </span>
+        </div>
+    </div>
+
+    <!-- KPI Metric Cards Grid -->
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-icon green">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <div class="kpi-body">
+                <span class="kpi-value">{{ active_notices }}</span>
+                <span class="kpi-label">Active Advisories</span>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon purple">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            </div>
+            <div class="kpi-body">
+                <span class="kpi-value">{{ revised_notices }}</span>
+                <span class="kpi-label">Revised Announcements</span>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon red">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+            </div>
+            <div class="kpi-body">
+                <span class="kpi-value">{{ cancelled_notices }}</span>
+                <span class="kpi-label">Cancelled / Suspended</span>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon slate">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            </div>
+            <div class="kpi-body">
+                <span class="kpi-value">{{ expired_notices }}</span>
+                <span class="kpi-label">Expired (Archived)</span>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon blue">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+            </div>
+            <div class="kpi-body">
+                <span class="kpi-value">{{ total_routes }}</span>
+                <span class="kpi-label">Routes Monitored</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="charts-grid">
+        <div class="chart-card">
+            <div class="chart-header">
+                <div>
+                    <h2 class="chart-title">Advisory Breakdown by Type</h2>
+                    <span class="chart-subtitle">Distribution of diversions, delays, cancellations & maintenance</span>
+                </div>
+            </div>
+            <div class="chart-canvas-wrapper">
+                <canvas id="advisoryTypeChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-header">
+                <div>
+                    <h2 class="chart-title">Notice Lifecycle Status</h2>
+                    <span class="chart-subtitle">Active vs Revised vs Expired Outdated vs Cancelled</span>
+                </div>
+            </div>
+            <div class="chart-canvas-wrapper">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent High-Priority & Urgent Notices -->
+    <div class="section-header">
+        <div>
+            <h2 class="section-title">Urgent & Active Service Notices</h2>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">
+                Extracted directly from permitted official portal feeds. Outdated notices are clearly distinguished from live records.
+            </p>
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <a href="{{ url_for('notices') }}" class="btn btn-secondary btn-sm">
+                View Full Notice Registry &rarr;
+            </a>
+        </div>
+    </div>
+
+    <div class="notices-grid">
+        {% for notice in recent_notices %}
+            <div class="notice-card {% if notice.status == 'Expired' %}is-expired{% endif %}">
+                <div>
+                    <div class="notice-card-header">
+                        <span class="route-pill">ROUTE {{ notice.route_number }}</span>
+                        <div class="badges-group">
+                            <!-- Advisory Type Badge -->
+                            <span class="badge badge-type {{ notice.advisory_type|lower|replace(' ', '') }}">
+                                {{ notice.advisory_type }}
+                            </span>
+
+                            <!-- Status Badge -->
+                            {% if notice.status == 'Active' %}
+                                <span class="badge badge-active">&bull; Active</span>
+                            {% elif notice.status == 'Revised' %}
+                                <span class="badge badge-revised">&#x21bb; Revised (v{{ notice.version }})</span>
+                            {% elif notice.status == 'Expired' %}
+                                <span class="badge badge-expired">&#9200; Expired</span>
+                            {% elif notice.status == 'Cancelled' %}
+                                <span class="badge badge-cancelled">&#10006; Cancelled</span>
+                            {% endif %}
+
+                            <!-- Severity Badge -->
+                            <span class="badge badge-severity {{ notice.severity|lower }}">
+                                {{ notice.severity }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <h3 class="notice-title">{{ notice.title }}</h3>
+
+                    <div class="notice-area">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                        <span>Area: {{ notice.affected_area }}</span>
+                    </div>
+
+                    <p class="notice-description">{{ notice.description }}</p>
+                </div>
+
+                <div class="notice-meta">
+                    <div class="meta-dates">
+                        <span><strong>Effective:</strong> {{ notice.start_date }}</span>
+                        <span><strong>Until:</strong> {{ notice.end_date }}</span>
+                    </div>
+
+                    <div class="meta-footer-actions">
+                        {% if notice.status == 'Expired' %}
+                            <span class="outdated-warning">&#9888; Outdated Notice (Historical)</span>
+                        {% else %}
+                            <span style="font-size: 0.74rem; color: #0284c7; font-weight: 600;">
+                                Source: {{ notice.source_name or 'Official Feed' }}
+                            </span>
+                        {% endif %}
+
+                        <div style="display: flex; gap: 6px;">
+                            {% if notice.status == 'Revised' %}
+                                <button class="btn btn-outline btn-xs" onclick="openHistoryModal({{ notice.id }})">
+                                    History (v{{ notice.version }})
+                                </button>
+                            {% endif %}
+                            <a href="{{ url_for('routes', route=notice.route_number) }}" class="btn btn-secondary btn-xs">
+                                Stop Map &rarr;
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div style="grid-column: 1 / -1; background: #ffffff; padding: 32px; border-radius: var(--radius-lg); text-align: center; border: 1px dashed var(--border-subtle);">
+                <p style="color: var(--text-muted); font-size: 0.95rem;">No active transit advisories currently reported.</p>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Notice Revision History Modal -->
+<div id="historyModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 class="modal-title" id="historyModalTitle">Notice Revision History</h3>
+            <button class="modal-close" onclick="closeHistoryModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="historyModalBody">
+            <p>Loading historical revisions...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/notices.js') }}"></script>
+{% endblock %}
